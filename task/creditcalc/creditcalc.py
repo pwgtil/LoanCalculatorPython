@@ -1,12 +1,19 @@
-loan_principal = 'Loan principal: 1000'
-final_output = 'The loan has been repaid!'
-first_month = 'Month 1: repaid 250'
-second_month = 'Month 2: repaid 250'
-third_month = 'Month 3: repaid 500'
+import math
 
-# write your code here
-print(loan_principal)
-print(first_month)
-print(second_month)
-print(third_month)
-print(final_output)
+loan_principal = int(input('Enter the loan principal:\n'))
+choice = input('What do you want to calculate\n\
+type "m" - for number of monthly payments,\n\
+type "p" - for the monthly payment:\n')
+if choice == 'm':
+    monthly_payment = int(input('Enter the monthly payment:\n'))
+    result = math.ceil(loan_principal / monthly_payment)
+    print(f'\nIt will take {result} months to repay the loan'
+          if result > 1 else '\nIt will take 1 month to repay the loan')
+else:
+    no_of_months = int(input('Enter the number of months:\n'))
+    payment = math.ceil(loan_principal / no_of_months)
+    if loan_principal % no_of_months == 0:
+        print(f'\nYour monthly payment = {payment}')
+    else:
+        last_payment = loan_principal - (no_of_months - 1) * payment
+        print(f'\nYour monthly payment = {payment}  and the last payment = {last_payment}.')
