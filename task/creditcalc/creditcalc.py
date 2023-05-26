@@ -1,36 +1,69 @@
 import math
+import argparse
 
-choice = input('What do you want to calculate?\n\
-type "n" - for number of monthly payments,\n\
-type "a" for annuity monthly payment amount,\n\
-type "p" for loan principal:\n')
-if choice == 'n':
-    loan_principal = int(input('Enter the loan principal:\n'))
-    monthly_payment = float(input('Enter the monthly payment:\n'))
-    loan_interest = float(input('Enter the loan interest:\n'))
-    monthly_interest = loan_interest / 1200
-    payments = math.ceil(
-        math.log((monthly_payment / (monthly_payment - monthly_interest * loan_principal)), 1 + monthly_interest))
-    years = payments // 12
-    months = payments % 12
-    txt_years = f'{years if years > 0 else ""}' + (" year" if years > 0 else "") + "s" if years > 1 else ""
-    txt_and = " and " if years > 0 and months > 0 else ""
-    txt_months = f'{months if months > 0 else ""}' + (" month" if months > 0 else "") + "s" if months > 1 else ""
-    print(f'It will take {txt_years + txt_and + txt_months} to repay this loan!')
 
-elif choice == 'a':
-    loan_principal = int(input('Enter the loan principal:\n'))
-    no_of_periods = int(input('Enter the number of periods:\n'))
-    loan_interest = float(input('Enter the loan interest:\n'))
-    monthly_interest = loan_interest / 1200
-    payment = loan_principal * (monthly_interest * (1 + monthly_interest) ** no_of_periods) / \
-              (((1 + monthly_interest) ** no_of_periods) - 1)
-    print(f'\nYour monthly payment = {math.ceil(payment)}!')
+def init_check(args):
+    ok = True
+    if args.type not in ["annuity", "diff"]:
+        ok = False
+    if args.type == "diff" and args.payment is not None:
+        ok = False
+    if args.interest is None:
+        ok = False
+    if any(["-" in getattr(args, txt) for txt in vars(args) if getattr(args, txt) is not None]):
+        ok = False
+    if len([txt for txt in vars(args) if getattr(args, txt) is not None]) != 4:
+        ok = False
+    return ok
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--type", choices=["annuity", "diff"])  # mandatory
+parser.add_argument("--payment")  # only for annuity
+parser.add_argument("--principal")  # available for both
+parser.add_argument("--periods")  # both
+parser.add_argument("--interest")  # mandatory
+
+args = parser.parse_args()
+
+if not init_check(args):
+    print("Incorrect parameters")
 else:
-    annuity_payment = float(input('Enter the annuity payment:\n'))
-    no_of_periods = int(input('Enter the number of periods:\n'))
-    loan_interest = float(input('Enter the loan interest:\n'))
-    monthly_interest = loan_interest / 1200
-    result = annuity_payment / ((monthly_interest * (1 + monthly_interest) ** no_of_periods) /
-                                (((1 + monthly_interest) ** no_of_periods) - 1))
-    print(f'\nYour loan principal = {round(result)}!')
+    interest = float(args.interest)
+    i = interest / 1200
+
+    if args.type == 'annuity':
+        case = [key for key in vars(args) if getattr(args, key) is None][0]
+        p, a, n = 0.0, 0.0, 0
+        if case == "periods":  # a, p
+            p = float(args.principal)
+            a = float(args.payment)
+            n = math.ceil(math.log((a / (a - i * p)), 1 + i))
+            years = n // 12
+            months = n % 12
+            txt_years = f'{years if years > 0 else ""}' + (" year" if years > 0 else "") + "s" if years > 1 else ""
+            txt_and = " and " if years > 0 and months > 0 else ""
+            txt_months = f'{months if months > 0 else ""}' + (
+                " month" if months > 0 else "") + "s" if months > 1 else ""
+            print(f'It will take {txt_years + txt_and + txt_months} to repay this loan!')
+        elif case == "payment":  # p, n
+            p = float(args.principal)
+            n = int(args.periods)
+            a = math.ceil(p * (i * (1 + i) ** n) / (((1 + i) ** n) - 1))
+            print(f'Your annuity payment = {math.ceil(a)}!')
+        elif case == "principal":  # a, n
+            a = float(args.payment)
+            n = int(args.periods)
+            p = a / ((i * (1 + i) ** n) / (((1 + i) ** n) - 1))
+            print(f'Your loan principal = {math.floor(p)}!')
+        print("Overpayment = " + str(math.ceil(a * n - p)))
+    elif args.type == 'diff':
+        p = float(args.principal)
+        n = int(args.periods)
+        sum = 0
+        for m in range(1, n + 1):
+            d = math.ceil(p / n + i * (p - (p * (m - 1)) / n))
+            sum += d
+            print(f"Month {m}: payment is {d}")
+        print(f"\nOverpayment = {math.ceil(sum - p)}")
